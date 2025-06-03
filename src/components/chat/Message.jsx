@@ -82,13 +82,8 @@ const Message = ({ message }) => {
           <MessageTime isOwn={isOwn}>{formattedTime}</MessageTime>
         </MessageMeta>
         <MessageBubble isOwn={isOwn}>
-          {content}
+          <div dangerouslySetInnerHTML={{ __html: content }} />
         </MessageBubble>
-        {isOwn && status && (
-          <MessageStatus>
-            {status === 'sent' ? '✓' : status === 'delivered' ? '✓✓' : ''}
-          </MessageStatus>
-        )}
       </MessageContent>
     </MessageContainer>
   );

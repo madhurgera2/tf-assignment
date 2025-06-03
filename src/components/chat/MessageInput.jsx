@@ -1,550 +1,518 @@
 import React, { useState, useRef, useEffect } from 'react';
-import Avatar from '../common/Avatar';
-import { createEditor, Editor, Transforms, Text, Element as SlateElement } from 'slate';
-import { Slate, Editable, withReact } from 'slate-react';
-import {
-  MessageInputContainer,
-  StyledForm,
-  InputField,
-  FormattedPreview,
-  FormatToolbar,
-  FormatButton,
-  Divider,
-  BottomControls,
-  LeftControls,
-  RightControls,
-  ActionButton,
-  SendButton,
-  EmojiPickerContainer,
-  EmojiGrid,
-  EmojiButton,
-  CloseButton,
-  SuggestionContainer,
-  SuggestionList,
-  SuggestionItem,
-  UserName
-} from './Message.styles.jsx';
+import styled from 'styled-components';
 
-// Simple emoji picker component
-const EmojiPicker = ({ onSelectEmoji, onClose }) => {
-  const commonEmojis = [
-    '😊', '👍', '🎉', '❤️', '🔥', 
-    '😂', '🙏', '👏', '🤔', '😢', 
-    '💪', '✅', '⭐', '💯', '🚀'
-  ];
-  
-  return (
-    <EmojiPickerContainer>
-      <EmojiGrid>
-        {commonEmojis.map((emoji, index) => (
-          <EmojiButton 
-            key={index} 
-            onClick={() => onSelectEmoji(emoji)}
-          >
-            {emoji}
-          </EmojiButton>
-        ))}
-      </EmojiGrid>
-      <CloseButton onClick={onClose}>Close</CloseButton>
-    </EmojiPickerContainer>
-  );
-};
+// Styled Components
+const MessageInputContainer = styled.div`
+  background-color: #222529;
+  border-radius: 8px;
+  margin: 0 16px 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+`;
 
-// Users for mention suggestions
-const mockUsers = [
-  { id: 1, name: 'Saurav Kumar' },
-  { id: 2, name: 'Gokul Nk' },
-  { id: 3, name: 'Aditya Shankar' },
-  { id: 4, name: 'Ravi Prakash' },
-  { id: 5, name: 'Priya Singh' }
-];
+const StyledForm = styled.form`
+  display: flex;
+  flex-direction: column;
+`;
 
-// Mention suggestions component
-const MentionSuggestions = ({ query, onSelectUser, onClose }) => {
-  // Filter users based on query
-  const filteredUsers = query.trim() === '' 
-    ? mockUsers 
-    : mockUsers.filter(user => 
-        user.name.toLowerCase().includes(query.toLowerCase())
-      );
-  
-  return (
-    <SuggestionContainer>
-      <SuggestionList>
-        {filteredUsers.map(user => (
-          <SuggestionItem 
-            key={user.id} 
-            onClick={() => onSelectUser(user)}
-          >
-            <Avatar size="24px" name={user.name} />
-            <UserName>{user.name}</UserName>
-          </SuggestionItem>
-        ))}
-      </SuggestionList>
-      <CloseButton onClick={onClose}>Close</CloseButton>
-    </SuggestionContainer>
-  );
-};
+const FormatToolbar = styled.div`
+  display: flex;
+  padding: 8px 16px;
+  border-bottom: 1px solid #383a3e;
+  gap: 8px;
+`;
 
-// Simple utility to format markdown text for preview
-const formatMarkdown = (text) => {
-  if (!text) return '';
+const FormatButton = styled.button`
+  background-color: transparent;
+  color: #9a9a9a;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s;
   
-  // Format the text with HTML elements instead of markdown syntax
-  let formatted = text;
-  
-  // Bold
-  formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<span class="bold">$1</span>');
-  
-  // Italic
-  formatted = formatted.replace(/_(.*?)_/g, '<span class="italic">$1</span>');
-  
-  // Strikethrough
-  formatted = formatted.replace(/~~(.*?)~~/g, '<span class="strike">$1</span>');
-  
-  // Links
-  formatted = formatted.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="link">$1</a>');
-  
-  // Code blocks
-  formatted = formatted.replace(/```([\s\S]*?)```/g, '<div class="codeBlock">$1</div>');
-  
-  // Inline code
-  formatted = formatted.replace(/`([^`]+)`/g, '<span class="code">$1</span>');
-  
-  // Bullet lists - simplified regex to avoid complex patterns
-  const bulletListItems = [];
-  const lines = formatted.split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim().startsWith('•')) {
-      bulletListItems.push(lines[i].replace(/^\s*•\s+(.*)$/, '<li class="listItem">$1</li>'));
-      lines[i] = '';
-    }
+  &:hover {
+    background-color: #393b3f;
+    color: #ffffff;
   }
   
-  if (bulletListItems.length > 0) {
-    formatted = lines.join('\n');
-    formatted += `<ul class="bulletList">${bulletListItems.join('')}</ul>`;
+  &.active {
+    background-color: #393b3f;
+    color: #1d9bd1;
   }
-  
-  // Numbered lists - simplified regex to avoid complex patterns
-  const numberedListItems = [];
-  const lines2 = formatted.split('\n');
-  for (let i = 0; i < lines2.length; i++) {
-    if (/^\s*\d+\.\s/.test(lines2[i])) {
-      numberedListItems.push(lines2[i].replace(/^\s*\d+\.\s(.*)$/, '<li class="listItem">$1</li>'));
-      lines2[i] = '';
-    }
-  }
-  
-  if (numberedListItems.length > 0) {
-    formatted = lines2.join('\n');
-    formatted += `<ol class="numberList">${numberedListItems.join('')}</ol>`;
-  }
-  
-  // Format line breaks
-  formatted = formatted.replace(/\n/g, '<br />');
-  
-  return formatted;
-};
+`;
 
+const EditorArea = styled.div`
+  min-height: 40px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 10px 16px;
+  color: var(--text-primary);
+  outline: none;
+  word-break: break-word;
+  line-height: 1.5;
+  
+  &[contenteditable="false"] {
+    background-color: #3c3f44;
+    cursor: not-allowed;
+  }
+  
+  &:empty:before {
+    content: attr(data-placeholder);
+    color: var(--text-secondary);
+    pointer-events: none;
+  }
+`;
 
+const FilePreviewContainer = styled.div`
+  padding: 8px 16px;
+  border-bottom: 1px solid #383a3e;
+  display: flex;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.2);
+`;
+
+const FilePreviewImage = styled.img`
+  height: 40px;
+  width: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-right: 8px;
+`;
+
+const FilePreviewName = styled.div`
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-secondary);
+`;
+
+const RemoveFileButton = styled.button`
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+  margin-left: 8px;
+  
+  &:hover {
+    color: #e01e5a;
+  }
+`;
+
+const BottomControls = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-top: 1px solid #383a3e;
+`;
+
+const SendButton = styled.button`
+  background-color: #007a5a;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: #008f69;
+  }
+  
+  &:disabled {
+    background-color: #2c4a3e;
+    cursor: not-allowed;
+  }
+`;
+
+const FileUploadButton = styled.button`
+  background-color: transparent;
+  color: #9a9a9a;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s;
+  
+  &:hover {
+    color: #ffffff;
+  }
+  
+  &:disabled {
+    color: #555;
+    cursor: not-allowed;
+  }
+`;
+
+const HiddenFileInput = styled.input`
+  display: none;
+`;
 
 const MessageInput = ({ onSendMessage, disabled, chatName = 'general' }) => {
-  const [message, setMessage] = useState('');
+  const fileInputRef = useRef(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
+
+  // Current formatting state
   const [formatOptions, setFormatOptions] = useState({
     bold: false,
     italic: false,
     strike: false,
-    link: false,
-    bulletList: false,
-    numberList: false,
-    code: false,
-    codeBlock: false
+    link: false
   });
-  
-  // UI state
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
-  const [mentionQuery, setMentionQuery] = useState('');
-  
-  const textareaRef = useRef(null);
-  const [selectionStart, setSelectionStart] = useState(0);
-  const [selectionEnd, setSelectionEnd] = useState(0);
-  
+
+  // Track editor reference and empty state
+  const editorRef = useRef(null);
+  const [isEmpty, setIsEmpty] = useState(true);
+
+  // Update empty state
+  const checkIfEmpty = () => {
+    if (editorRef.current) {
+      const text = editorRef.current.innerText.trim();
+      setIsEmpty(text === '');
+    }
+  };
+
+  // Handle paste events to remove formatting
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
+  };
+
+  // Send message handler
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (message.trim()) {
-      // Send the message with formatting intact
-      onSendMessage(message);
-      setMessage('');
-    }
-  };
-  
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
-    }
-  };
-  
-  const saveSelection = () => {
-    if (textareaRef.current) {
-      setSelectionStart(textareaRef.current.selectionStart);
-      setSelectionEnd(textareaRef.current.selectionEnd);
-    }
-  };
-
-  const restoreSelection = () => {
-    if (textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(selectionStart, selectionEnd);
-    }
-  };
-  
-  const toggleFormat = (format) => {
-    // This actually applies the formatting and updates the state
-    setFormatOptions(prev => ({
-      ...prev,
-      [format]: !prev[format]
-    }));
-  };
-
-  const getSelectedText = () => {
-    if (textareaRef.current) {
-      return message.substring(selectionStart, selectionEnd);
-    }
-    return '';
-  };
-  
-  const insertText = (textToInsert) => {
-    if (textareaRef.current) {
-      const start = selectionStart;
-      const end = selectionEnd;
-      const beforeText = message.substring(0, start);
-      const afterText = message.substring(end);
-      
-      const newText = `${beforeText}${textToInsert}${afterText}`;
-      setMessage(newText);
-      
-      // Set cursor position after insertion
-      const newPosition = start + textToInsert.length;
-      
-      // Use setTimeout to ensure state has been updated
-      setTimeout(() => {
-        textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(newPosition, newPosition);
-      }, 0);
-    }
-  };
-  
-  const applyFormatting = (format) => {
-    saveSelection();
-    const selectedText = getSelectedText();
     
-      // Apply formatting only if text is selected or format is list
-    if (selectedText || format.includes('List')) {
-      switch (format) {
+    if (selectedFile) {
+      // Send file as message
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const fileContent = event.target.result;
+        const isImage = selectedFile.type.startsWith('image/');
+        
+        let messageContent;
+        if (isImage) {
+          // For image files, include the preview
+          messageContent = `
+            <div class="file-message">
+              <div class="file-name">${selectedFile.name}</div>
+              <div class="file-preview">
+                <img src="${fileContent}" alt="${selectedFile.name}" style="max-width: 100%; max-height: 300px; border-radius: 4px;" />
+              </div>
+            </div>
+          `;
+        } else {
+          // For non-image files, just show the filename
+          messageContent = `<div class="file-message">File: ${selectedFile.name}</div>`;
+        }
+        
+        onSendMessage(messageContent);
+        setSelectedFile(null);
+      };
+      reader.readAsDataURL(selectedFile);
+      return;
+    }
+    
+    if (editorRef.current && !isEmpty) {
+      // Get HTML content
+      const content = editorRef.current.innerHTML;
+      
+      // Send the message
+      onSendMessage(content);
+      
+      // Reset editor
+      editorRef.current.innerHTML = '';
+      setIsEmpty(true);
+      
+      // Reset format options
+      setFormatOptions({
+        bold: false,
+        italic: false,
+        strike: false,
+        link: false
+      });
+    }
+  };
+  
+  const handleFileSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setFilePreview(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setFilePreview(null);
+      }
+    }
+  };
+  
+  const clearSelectedFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+  
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const insertMarkerAtCursor = () => {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const span = document.createElement('span');
+      span.id = 'format-marker';
+      span.textContent = '\u200B'; // Zero-width space
+      
+      range.insertNode(span);
+      
+      // Move cursor after marker
+      range.setStartAfter(span);
+      range.setEndAfter(span);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      return span;
+    }
+    return null;
+  };
+
+  const getSelectionOrInsertMarker = () => {
+    const selection = window.getSelection();
+    const hasSelection = selection.toString().length > 0;
+    
+    if (!hasSelection && editorRef.current) {
+      return insertMarkerAtCursor();
+    }
+    
+    return null;
+  };
+
+  const applyFormatToSelection = (command, value = null, turnOn = true) => {
+    const marker = getSelectionOrInsertMarker();
+    
+    if (turnOn) {
+      document.execCommand(command, false, value);
+    } else {
+      switch (command) {
         case 'bold':
-          insertFormatting('**', '**', selectedText);
+          document.execCommand('bold', false);
           break;
         case 'italic':
-          insertFormatting('_', '_', selectedText);
+          document.execCommand('italic', false);
           break;
-        case 'strike':
-          insertFormatting('~~', '~~', selectedText);
+        case 'strikeThrough':
+          document.execCommand('strikeThrough', false);
           break;
-        case 'link':
-          const url = selectedText.includes('http') ? selectedText : 'https://';
-          if (selectedText && selectedText.includes('http')) {
-            insertFormatting('[', `](${url})`, selectedText);
-          } else {
-            insertFormatting('[', `](${url})`, selectedText);
-          }
-          break;
-        case 'bulletList':
-          if (selectedText) {
-            // Format each line with bullet
-            const lines = selectedText.split('\n');
-            const formattedText = lines.map(line => `• ${line}`).join('\n');
-            insertReplacement(formattedText, selectedText);
-          } else {
-            insertText('• ');
-          }
-          break;
-        case 'numberList':
-          if (selectedText) {
-            // Format each line with numbers
-            const lines = selectedText.split('\n');
-            const formattedText = lines.map((line, index) => `${index + 1}. ${line}`).join('\n');
-            insertReplacement(formattedText, selectedText);
-          } else {
-            insertText('1. ');
-          }
-          break;
-        case 'code':
-          insertFormatting('`', '`', selectedText);
-          break;
-        case 'codeBlock':
-          insertFormatting('```\n', '\n```', selectedText);
+        case 'createLink':
+          document.execCommand('unlink', false);
           break;
         default:
           break;
       }
-      
-      // Toggle the format option state
-      toggleFormat(format);
-      
-      // No need to set preview mode anymore as we're using WYSIWYG
+    }
+    
+    if (marker) {
+      marker.parentNode.removeChild(marker);
     }
   };
-  
-  // Helper function to insert formatting around selected text
-  const insertFormatting = (before, after, selectedText) => {
-    if (textareaRef.current) {
-      const start = selectionStart;
-      const end = selectionEnd;
-      const beforeText = message.substring(0, start);
-      const afterText = message.substring(end);
-      
-      const newText = `${beforeText}${before}${selectedText}${after}${afterText}`;
-      setMessage(newText);
-      
-      // Set cursor position after insertion
-      const newPosition = start + before.length + selectedText.length + after.length;
-      
-      // Use setTimeout to ensure state has been updated
-      setTimeout(() => {
-        textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(newPosition, newPosition);
-      }, 0);
+
+  const toggleFormat = (format) => {
+    if (document.activeElement !== editorRef.current) {
+      editorRef.current.focus();
+    }
+    
+    const newState = !formatOptions[format];
+    setFormatOptions({ ...formatOptions, [format]: newState });
+    
+    switch (format) {
+      case 'bold':
+        applyFormatToSelection('bold', null, newState);
+        break;
+      case 'italic':
+        applyFormatToSelection('italic', null, newState);
+        break;
+      case 'strike':
+        applyFormatToSelection('strikeThrough', null, newState);
+        break;
+      case 'link':
+        const selection = window.getSelection();
+        const hasSelection = selection.toString().length > 0;
+        
+        if (newState && hasSelection) {
+          const url = prompt('Enter URL:', 'https://');
+          if (url) {
+            applyFormatToSelection('createLink', url, true);
+          } else {
+            setFormatOptions({ ...formatOptions, link: false });
+          }
+        } else if (!newState) {
+          applyFormatToSelection('createLink', null, false);
+        } else {
+          setFormatOptions({ ...formatOptions, link: false });
+        }
+        break;
+      default:
+        break;
+    }
+    
+    checkIfEmpty();
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+      return;
+    }
+    
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
+      switch (e.key.toLowerCase()) {
+        case 'b':
+          e.preventDefault();
+          toggleFormat('bold');
+          break;
+        case 'i':
+          e.preventDefault();
+          toggleFormat('italic');
+          break;
+        default:
+          break;
+      }
     }
   };
-  
-  // Helper function to replace selected text
-  const insertReplacement = (replacement, selectedText) => {
-    if (textareaRef.current) {
-      const start = selectionStart;
-      const end = selectionEnd;
-      const beforeText = message.substring(0, start);
-      const afterText = message.substring(end);
+
+  const handleInput = () => {
+    checkIfEmpty();
+  };
+
+  const checkFormatState = () => {
+    setFormatOptions({
+      bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic'),
+      strike: document.queryCommandState('strikeThrough'),
+      link: document.queryCommandState('createLink')
+    });
+  };
+
+  const handleSelectionChange = () => {
+    const selection = window.getSelection();
+    
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
       
-      const newText = `${beforeText}${replacement}${afterText}`;
-      setMessage(newText);
-      
-      // Set cursor position after replacement
-      const newPosition = start + replacement.length;
-      
-      // Use setTimeout to ensure state has been updated
-      setTimeout(() => {
-        textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(newPosition, newPosition);
-      }, 0);
+      if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
+        checkFormatState();
+      }
     }
   };
-  
-  const resizeTextarea = () => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`;
-    }
-  };
-  
-  const handleTextChange = (e) => {
-    const newValue = e.target.value;
-    setMessage(newValue);
-    resizeTextarea();
-  };
-  
-  const handleSelect = () => {
-    saveSelection();
-  };
-  
+
+  useEffect(() => {
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+    };
+  }, []);
+
   return (
     <MessageInputContainer>
       <StyledForm onSubmit={handleSubmit}>
         <FormatToolbar>
           <FormatButton 
-            type="button" 
-            title="Bold (⌘B)" 
+            type="button"
             className={formatOptions.bold ? 'active' : ''}
-            onClick={() => applyFormatting('bold')}
+            onClick={() => toggleFormat('bold')}
+            title="Bold (Ctrl+B)"
           >
-            <strong>B</strong>
+            B
           </FormatButton>
           <FormatButton 
-            type="button" 
-            title="Italic (⌘I)" 
+            type="button"
             className={formatOptions.italic ? 'active' : ''}
-            onClick={() => applyFormatting('italic')}
+            onClick={() => toggleFormat('italic')}
+            title="Italic (Ctrl+I)"
           >
-            <em>I</em>
+            I
           </FormatButton>
           <FormatButton 
-            type="button" 
-            title="Strikethrough (⌘Shift+X)" 
+            type="button"
             className={formatOptions.strike ? 'active' : ''}
-            onClick={() => applyFormatting('strike')}
+            onClick={() => toggleFormat('strike')}
+            title="Strikethrough"
           >
-            <span style={{ textDecoration: 'line-through' }}>S</span>
+            S
           </FormatButton>
           <FormatButton 
-            type="button" 
-            title="Link (⌘Shift+U)" 
+            type="button"
             className={formatOptions.link ? 'active' : ''}
-            onClick={() => applyFormatting('link')}
+            onClick={() => toggleFormat('link')}
+            title="Link"
           >
             🔗
           </FormatButton>
-          <Divider />
-          <FormatButton 
-            type="button" 
-            title="Bulleted list (⌘Shift+8)" 
-            className={formatOptions.bulletList ? 'active' : ''}
-            onClick={() => applyFormatting('bulletList')}
-          >
-            •
-          </FormatButton>
-          <FormatButton 
-            type="button" 
-            title="Numbered list (⌘Shift+7)" 
-            className={formatOptions.numberList ? 'active' : ''}
-            onClick={() => applyFormatting('numberList')}
-          >
-            1.
-          </FormatButton>
-          <Divider />
-          <FormatButton 
-            type="button" 
-            title="Code (⌘Shift+C)" 
-            className={formatOptions.code ? 'active' : ''}
-            onClick={() => applyFormatting('code')}
-          >
-            {'<>'}
-          </FormatButton>
-          <FormatButton 
-            type="button" 
-            title="Code block (⌘Shift+Alt+C)" 
-            className={formatOptions.codeBlock ? 'active' : ''}
-            onClick={() => applyFormatting('codeBlock')}
-          >
-            {'{}'}
-          </FormatButton>
         </FormatToolbar>
         
-        {/* Hidden textarea to store raw markdown */}
-        <div style={{ display: 'none' }}>
-          <textarea
-            ref={textareaRef}
-            value={message}
-            onChange={handleTextChange}
-            onKeyDown={handleKeyDown}
-            onSelect={handleSelect}
-            onBlur={saveSelection}
-          />
-        </div>
+        {selectedFile && (
+          <FilePreviewContainer>
+            {filePreview && (
+              <FilePreviewImage src={filePreview} alt="Preview" />
+            )}
+            <FilePreviewName>{selectedFile.name}</FilePreviewName>
+            <RemoveFileButton onClick={clearSelectedFile} title="Remove file">
+              ✕
+            </RemoveFileButton>
+          </FilePreviewContainer>
+        )}
         
-        {/* WYSIWYG editor - show only formatted content */}
-        <FormattedPreview 
-          contentEditable
-          dangerouslySetInnerHTML={{ __html: message ? formatMarkdown(message) : '' }}
-          placeholder={`Message ${chatName ? `#${chatName}` : 'Saurav Kumar'}`}
-          onInput={(e) => {
-            // Capture HTML content and convert back to markdown
-            const html = e.currentTarget.innerHTML;
-            // This is a simplified approach - in a real implementation you'd need
-            // a more sophisticated HTML-to-markdown converter
-            setMessage(html.replace(/<[^>]*>/g, ''));
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit(e);
-            }
-          }}
-          onClick={() => {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-              const range = selection.getRangeAt(0);
-              saveSelection();
-            }
-          }}
-          style={{
-            minHeight: '44px',
-            outline: 'none',
-            padding: '12px 16px',
-            lineHeight: '1.5',
-            fontSize: '15px',
-            color: 'var(--text-primary)',
-            backgroundColor: 'transparent'
-          }}
+        <EditorArea 
+          ref={editorRef}
+          contentEditable={!disabled}
+          suppressContentEditableWarning
+          data-placeholder={`Message ${chatName}`}
+          onInput={handleInput}
+          onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
         />
         
         <BottomControls>
-          <LeftControls>
-            <ActionButton 
-              title="Add" 
-              disabled={disabled}
-              onClick={() => insertText('+ ')}
-            >
-              +
-            </ActionButton>
-            <ActionButton 
-              title="Format text" 
-              disabled={disabled}
-              onClick={() => {
-                // This button could be used for other formatting options
-                // or to show a formatting menu
-              }}
-            >
-              Aa
-            </ActionButton>
-            <ActionButton 
-              title="Emoji" 
-              disabled={disabled}
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            >
-              😊
-            </ActionButton>
-            <ActionButton 
-              title="Mention someone" 
-              disabled={disabled}
-              onClick={() => setShowMentionSuggestions(!showMentionSuggestions)}
-            >
-              @
-            </ActionButton>
-            <div className="picker-container">
-              {showEmojiPicker && (
-                <EmojiPicker 
-                  onSelectEmoji={(emoji) => {
-                    insertText(emoji);
-                    setShowEmojiPicker(false);
-                  }}
-                  onClose={() => setShowEmojiPicker(false)}
-                />
-              )}
-              {showMentionSuggestions && (
-                <MentionSuggestions 
-                  query={mentionQuery}
-                  onSelectUser={(user) => {
-                    insertText(`@${user.name} `);
-                    setShowMentionSuggestions(false);
-                  }}
-                  onClose={() => setShowMentionSuggestions(false)}
-                />
-              )}
-            </div>
-          </LeftControls>
-          
-          <RightControls>
-            <SendButton 
-              type="submit" 
-              title="Send message"
-              disabled={!message.trim() || disabled}
-            >
-              ➤
-            </SendButton>
-          </RightControls>
+          <FileUploadButton 
+            type="button" 
+            onClick={triggerFileInput}
+            disabled={disabled}
+            title="Upload an image"
+          >
+            +
+          </FileUploadButton>
+          <HiddenFileInput 
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            accept="image/*"
+          />
+          <SendButton 
+            type="submit" 
+            disabled={(isEmpty && !selectedFile) || disabled}
+          >
+            Send 
+          </SendButton>
         </BottomControls>
       </StyledForm>
     </MessageInputContainer>
