@@ -1,35 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import styled from 'styled-components';
 import Message from './Message';
-
-const MessageListContainer = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  background-color: var(--channel-bg);
-  display: flex;
-  flex-direction: column;
-`;
-
-const EmptyStateMessage = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--text-secondary);
-  text-align: center;
-  
-  h3 {
-    margin-bottom: 8px;
-    color: var(--text-primary);
-  }
-  
-  p {
-    margin: 0;
-    max-width: 300px;
-  }
-`;
+import { MessageListContainer, EmptyStateMessage } from './MessageList.styles';
 
 const MessageList = ({ messages }) => {
   const messagesEndRef = useRef(null);

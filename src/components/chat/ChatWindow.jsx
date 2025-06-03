@@ -1,111 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import { chatService } from '../../services/chatService';
+import React, { useState, useEffect, useRef } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
-
-const ChatWindowContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-  background-color: var(--channel-bg);
-`;
-
-const ChatHeader = styled.div`
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: var(--channel-bg);
-  color: var(--text-primary);
-`;
-
-const ChatInfo = styled.div`
-  display: flex;
-  align-items: center;
-`;
-
-const ChatName = styled.h2`
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-`;
-
-const ChannelIcon = styled.span`
-  margin-right: 6px;
-  font-size: 16px;
-  color: var(--text-secondary);
-`;
-
-const HeaderActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-const HeaderButton = styled.button`
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 4px 8px;
-  display: flex;
-  align-items: center;
-  
-  &:hover {
-    color: var(--text-primary);
-  }
-`;
-
-const DeleteButton = styled(HeaderButton)`
-  color: #e01e5a;
-  
-  &:hover {
-    color: #e01e5a;
-    text-decoration: underline;
-  }
-`;
-
-const LoadingState = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  flex: 1;
-  color: var(--text-secondary);
-`;
-
-const EmptyState = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  flex: 1;
-  color: var(--text-secondary);
-  text-align: center;
-  
-  h2 {
-    margin-bottom: 8px;
-    color: var(--text-primary);
-  }
-  
-  p {
-    margin: 0;
-    max-width: 400px;
-  }
-`;
+import { chatService } from '../../services/chatService';
+import DeleteChatModal from './DeleteChatModal';
+import {
+  ChatWindowContainer,
+  ChatHeader,
+  ChatInfo,
+  ChatName,
+  ChannelIcon,
+  HeaderActions,
+  HeaderButton,
+  DeleteButton,
+  LoadingState,
+  EmptyState
+} from './ChatWindow.styles';
 
 const ChatWindow = ({ chatId, onDeleteChat }) => {
   const [chat, setChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   
   useEffect(() => {
     if (chatId) {
@@ -132,8 +47,8 @@ const ChatWindow = ({ chatId, onDeleteChat }) => {
     }
   }, [chatId]);
   
-  const handleSendMessage = (content) => {
-    chatService.sendMessage(chatId, content)
+  const handleSendMessage = (content, attachment = null) => {
+    chatService.sendMessage(chatId, content, attachment)
       .then(newMessage => {
         setMessages(prev => [...prev, newMessage]);
       })
@@ -143,15 +58,19 @@ const ChatWindow = ({ chatId, onDeleteChat }) => {
   };
   
   const handleDeleteChat = () => {
-    if (window.confirm(`Are you sure you want to delete "${chat?.name}" chat?`)) {
-      chatService.deleteChat(chatId)
-        .then(() => {
-          onDeleteChat(chatId);
-        })
-        .catch(err => {
-          console.error('Error deleting chat:', err);
-        });
-    }
+    setIsDeleteModalOpen(true);
+  };
+  
+  const confirmDeleteChat = () => {
+    chatService.deleteChat(chatId)
+      .then(() => {
+        setIsDeleteModalOpen(false);
+        onDeleteChat(chatId);
+      })
+      .catch(err => {
+        console.error('Error deleting chat:', err);
+        setIsDeleteModalOpen(false);
+      });
   };
   
   if (!chatId) {
@@ -181,10 +100,7 @@ const ChatWindow = ({ chatId, onDeleteChat }) => {
           <ChatName>{chat?.name}</ChatName>
         </ChatInfo>
         <HeaderActions>
-          <HeaderButton title="Add people">👥</HeaderButton>
-          <HeaderButton title="Call">📞</HeaderButton>
-          <HeaderButton title="Information">ℹ️</HeaderButton>
-          <DeleteButton onClick={handleDeleteChat}>Delete Chat</DeleteButton>
+          <DeleteButton onClick={handleDeleteChat}>🗑️</DeleteButton>
         </HeaderActions>
       </ChatHeader>
       
@@ -193,6 +109,13 @@ const ChatWindow = ({ chatId, onDeleteChat }) => {
       <MessageInput 
         onSendMessage={handleSendMessage} 
         disabled={!chat || loading}
+        chatName={chat?.name}
+      />
+      
+      <DeleteChatModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteChat}
         chatName={chat?.name}
       />
     </ChatWindowContainer>

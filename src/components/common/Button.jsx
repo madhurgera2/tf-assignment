@@ -13,45 +13,45 @@ const StyledButton = styled.button`
   justify-content: center;
   
   ${props => props.variant === 'primary' && `
-    background-color: #4a154b;
+    background-color: #007a5a;
     color: white;
     border: none;
     
     &:hover {
-      background-color: #611f69;
+      background-color: #148567;
     }
     
     &:active {
-      background-color: #350d36;
+      background-color: #006e51;
     }
   `}
   
   ${props => props.variant === 'secondary' && `
     background-color: transparent;
-    color: #4a154b;
-    border: 1px solid #4a154b;
+    color: #D1D2D3;
+    border: 1px solid #565856;
     
     &:hover {
-      background-color: rgba(74, 21, 75, 0.06);
+      background-color: rgba(255, 255, 255, 0.06);
     }
     
     &:active {
-      background-color: rgba(74, 21, 75, 0.12);
+      background-color: rgba(255, 255, 255, 0.12);
     }
   `}
   
   ${props => props.variant === 'text' && `
     background-color: transparent;
-    color: #4a154b;
+    color: #1D9BD1;
     border: none;
     padding: 6px 8px;
     
     &:hover {
-      background-color: rgba(74, 21, 75, 0.06);
+      background-color: rgba(29, 155, 209, 0.06);
     }
     
     &:active {
-      background-color: rgba(74, 21, 75, 0.12);
+      background-color: rgba(29, 155, 209, 0.12);
     }
   `}
   

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { chatService, createChatSocket } from '../../services/chatService';
+import { chatService } from '../../services/chatService';
 import ChatList from './ChatList';
 import ChatWindow from './ChatWindow';
 import CreateChatModal from './CreateChatModal';
@@ -8,6 +8,7 @@ import CreateChatModal from './CreateChatModal';
 const ChatAppContainer = styled.div`
   display: flex;
   height: 100%;
+  width: 100%;
   overflow: hidden;
 `;
 
@@ -17,8 +18,8 @@ const ChatApp = () => {
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
-  // Load all chats on component mount
   useEffect(() => {
+    setLoading(true);
     chatService.getChats()
       .then(response => {
         setChats(response);
@@ -28,26 +29,6 @@ const ChatApp = () => {
         console.error('Error loading chats:', error);
         setLoading(false);
       });
-  }, []);
-  
-  // Mock real-time updates with the chat socket
-  useEffect(() => {
-    const socket = createChatSocket();
-    
-    socket.connect().then(() => {
-      console.log('Connected to chat socket');
-      
-      // No real implementation needed for this mock
-      const cleanup = socket.addListener((event) => {
-        // This would handle real-time events in a real app
-        console.log('Socket event:', event);
-      });
-      
-      return () => {
-        cleanup();
-        socket.disconnect();
-      };
-    });
   }, []);
   
   const handleSelectChat = (chatId) => {

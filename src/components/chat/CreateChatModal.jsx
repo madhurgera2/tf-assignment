@@ -1,50 +1,14 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
 import Button from '../common/Button';
 import Input from '../common/Input';
-
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-`;
-
-const ModalContent = styled.div`
-  background-color: white;
-  border-radius: 8px;
-  width: 400px;
-  max-width: calc(100% - 32px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-`;
-
-const ModalHeader = styled.div`
-  padding: 16px;
-  border-bottom: 1px solid #e2e2e2;
-`;
-
-const ModalTitle = styled.h3`
-  margin: 0;
-  font-size: 18px;
-`;
-
-const ModalBody = styled.div`
-  padding: 16px;
-`;
-
-const ModalFooter = styled.div`
-  padding: 16px;
-  border-top: 1px solid #e2e2e2;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-`;
+import {
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter
+} from './CreateChatModal.styles';
 
 const CreateChatModal = ({ isOpen, onClose, onCreateChat }) => {
   const [chatName, setChatName] = useState('');
@@ -90,12 +54,14 @@ const CreateChatModal = ({ isOpen, onClose, onCreateChat }) => {
               variant="secondary" 
               onClick={onClose}
               disabled={isSubmitting}
+              style={{ backgroundColor: 'transparent', color: '#D1D2D3', border: '1px solid #565856' }}
             >
               Cancel
             </Button>
             <Button 
               type="submit" 
               disabled={!chatName.trim() || isSubmitting}
+              style={{ backgroundColor: '#007a5a', color: 'white', border: 'none' }}
             >
               {isSubmitting ? 'Creating...' : 'Create'}
             </Button>

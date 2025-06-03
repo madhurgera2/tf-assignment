@@ -9,32 +9,35 @@ const InputWrapper = styled.div`
 
 const Label = styled.label`
   font-size: 14px;
-  color: #1d1c1d;
+  color: #D1D2D3;
   margin-bottom: 6px;
 `;
 
 const StyledInput = styled.input`
   padding: 10px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid #565856;
   border-radius: 4px;
   font-size: 15px;
   line-height: 1.5;
-  transition: border 0.2s ease;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
   width: 100%;
+  background-color: #222529;
+  color: #D1D2D3;
   
   &:focus {
     outline: none;
-    border-color: #4a154b;
-    box-shadow: 0 0 0 1px #4a154b;
+    border-color: #1264A3;
+    box-shadow: 0 0 0 1px #1264A3;
   }
   
   &::placeholder {
-    color: #9e9e9e;
+    color: #9A9A9A;
   }
   
   &:disabled {
-    background-color: #f8f8f8;
+    background-color: #383A3E;
     cursor: not-allowed;
+    color: #9A9A9A;
   }
 `;
 

@@ -1,177 +1,38 @@
 import React, { useState, useRef, useEffect } from 'react';
-import styled from 'styled-components';
-
-// Styled Components
-const MessageInputContainer = styled.div`
-  background-color: #222529;
-  border-radius: 8px;
-  margin: 0 16px 16px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-`;
-
-const StyledForm = styled.form`
-  display: flex;
-  flex-direction: column;
-`;
-
-const FormatToolbar = styled.div`
-  display: flex;
-  padding: 8px 16px;
-  border-bottom: 1px solid #383a3e;
-  gap: 8px;
-`;
-
-const FormatButton = styled.button`
-  background-color: transparent;
-  color: #9a9a9a;
-  border: none;
-  border-radius: 4px;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
-  transition: all 0.2s;
-  
-  &:hover {
-    background-color: #393b3f;
-    color: #ffffff;
-  }
-  
-  &.active {
-    background-color: #393b3f;
-    color: #1d9bd1;
-  }
-`;
-
-const EditorArea = styled.div`
-  min-height: 40px;
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 10px 16px;
-  color: var(--text-primary);
-  outline: none;
-  word-break: break-word;
-  line-height: 1.5;
-  
-  &[contenteditable="false"] {
-    background-color: #3c3f44;
-    cursor: not-allowed;
-  }
-  
-  &:empty:before {
-    content: attr(data-placeholder);
-    color: var(--text-secondary);
-    pointer-events: none;
-  }
-`;
-
-const FilePreviewContainer = styled.div`
-  padding: 8px 16px;
-  border-bottom: 1px solid #383a3e;
-  display: flex;
-  align-items: center;
-  background-color: rgba(0, 0, 0, 0.2);
-`;
-
-const FilePreviewImage = styled.img`
-  height: 40px;
-  width: 40px;
-  object-fit: cover;
-  border-radius: 4px;
-  margin-right: 8px;
-`;
-
-const FilePreviewName = styled.div`
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
-  color: var(--text-secondary);
-`;
-
-const RemoveFileButton = styled.button`
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 4px;
-  margin-left: 8px;
-  
-  &:hover {
-    color: #e01e5a;
-  }
-`;
-
-const BottomControls = styled.div`
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 16px;
-  border-top: 1px solid #383a3e;
-`;
-
-const SendButton = styled.button`
-  background-color: #007a5a;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  
-  &:hover {
-    background-color: #008f69;
-  }
-  
-  &:disabled {
-    background-color: #2c4a3e;
-    cursor: not-allowed;
-  }
-`;
-
-const FileUploadButton = styled.button`
-  background-color: transparent;
-  color: #9a9a9a;
-  border: none;
-  border-radius: 4px;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 18px;
-  transition: all 0.2s;
-  
-  &:hover {
-    color: #ffffff;
-  }
-  
-  &:disabled {
-    color: #555;
-    cursor: not-allowed;
-  }
-`;
-
-const HiddenFileInput = styled.input`
-  display: none;
-`;
+import LinkModal from './LinkModal';
+import {
+  MessageInputContainer,
+  StyledForm,
+  FormatToolbar,
+  FormatButton,
+  EditorArea,
+  FilePreviewContainer,
+  FilePreviewImage,
+  FilePreviewName,
+  RemoveFileButton,
+  BottomControls,
+  SendButton,
+  FileUploadButton,
+  HiddenFileInput
+} from './MessageInput.styles';
 
 const MessageInput = ({ onSendMessage, disabled, chatName = 'general' }) => {
   const fileInputRef = useRef(null);
+  const [message, setMessage] = useState('');
+  const [isEmpty, setIsEmpty] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
-
-  // Current formatting state
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [currentSelection, setCurrentSelection] = useState(null);
   const [formatOptions, setFormatOptions] = useState({
     bold: false,
     italic: false,
     strike: false,
-    link: false
+    link: false,
   });
 
   // Track editor reference and empty state
   const editorRef = useRef(null);
-  const [isEmpty, setIsEmpty] = useState(true);
 
   // Update empty state
   const checkIfEmpty = () => {
@@ -193,36 +54,27 @@ const MessageInput = ({ onSendMessage, disabled, chatName = 'general' }) => {
     e.preventDefault();
     
     if (selectedFile) {
-      // Send file as message
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const fileContent = event.target.result;
-        const isImage = selectedFile.type.startsWith('image/');
-        
-        let messageContent;
-        if (isImage) {
-          // For image files, include the preview
-          messageContent = `
-            <div class="file-message">
-              <div class="file-name">${selectedFile.name}</div>
-              <div class="file-preview">
-                <img src="${fileContent}" alt="${selectedFile.name}" style="max-width: 100%; max-height: 300px; border-radius: 4px;" />
-              </div>
-            </div>
-          `;
-        } else {
-          // For non-image files, just show the filename
-          messageContent = `<div class="file-message">File: ${selectedFile.name}</div>`;
-        }
-        
-        onSendMessage(messageContent);
-        setSelectedFile(null);
-      };
-      reader.readAsDataURL(selectedFile);
-      return;
-    }
-    
-    if (editorRef.current && !isEmpty) {
+      // Get text content from editor as caption
+      const caption = editorRef.current ? editorRef.current.innerHTML : '';
+      
+      // Pass both the caption and the file to the message handler
+      onSendMessage(caption, selectedFile);
+      
+      // Reset editor and file selection
+      if (editorRef.current) {
+        editorRef.current.innerHTML = '';
+      }
+      setIsEmpty(true);
+      clearSelectedFile();
+      
+      // Reset format options
+      setFormatOptions({
+        bold: false,
+        italic: false,
+        strike: false,
+        link: false
+      });
+    } else if (editorRef.current && !isEmpty) {
       // Get HTML content
       const content = editorRef.current.innerHTML;
       
@@ -358,12 +210,12 @@ const MessageInput = ({ onSendMessage, disabled, chatName = 'general' }) => {
         const hasSelection = selection.toString().length > 0;
         
         if (newState && hasSelection) {
-          const url = prompt('Enter URL:', 'https://');
-          if (url) {
-            applyFormatToSelection('createLink', url, true);
-          } else {
-            setFormatOptions({ ...formatOptions, link: false });
-          }
+          // Save the current selection before opening modal
+          setCurrentSelection({
+            range: selection.getRangeAt(0).cloneRange(),
+            text: selection.toString()
+          });
+          setIsLinkModalOpen(true);
         } else if (!newState) {
           applyFormatToSelection('createLink', null, false);
         } else {
@@ -424,6 +276,8 @@ const MessageInput = ({ onSendMessage, disabled, chatName = 'general' }) => {
       }
     }
   };
+
+
 
   useEffect(() => {
     document.addEventListener('selectionchange', handleSelectionChange);
@@ -515,6 +369,47 @@ const MessageInput = ({ onSendMessage, disabled, chatName = 'general' }) => {
           </SendButton>
         </BottomControls>
       </StyledForm>
+      
+      <LinkModal 
+        isOpen={isLinkModalOpen}
+        onClose={() => {
+          setIsLinkModalOpen(false);
+          setFormatOptions({ ...formatOptions, link: false });
+          editorRef.current.focus();
+        }}
+        onConfirm={(url) => {
+          const openInNewWindow = document.getElementById('open-new-window')?.checked;
+          
+          if (currentSelection) {
+            // Restore the selection
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(currentSelection.range);
+            
+            if (openInNewWindow) {
+              // Insert link with target="_blank" attribute
+              const range = currentSelection.range.cloneRange();
+              const linkElement = document.createElement('a');
+              linkElement.href = url;
+              linkElement.target = '_blank';
+              linkElement.rel = 'noopener noreferrer'; // Security best practice
+              linkElement.textContent = currentSelection.text;
+              range.deleteContents();
+              range.insertNode(linkElement);
+              setFormatOptions({ ...formatOptions, link: true });
+            } else {
+              // Use standard createLink command
+              applyFormatToSelection('createLink', url, true);
+            }
+          }
+          
+          setIsLinkModalOpen(false);
+          // Focus back on the input after adding link
+          setTimeout(() => {
+            editorRef.current.focus();
+          }, 0);
+        }}
+      />
     </MessageInputContainer>
   );
 };
