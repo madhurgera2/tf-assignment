@@ -18,7 +18,6 @@ import {
 
 const MessageInput = ({ onSendMessage, disabled, chatName = 'general' }) => {
   const fileInputRef = useRef(null);
-  const [message, setMessage] = useState('');
   const [isEmpty, setIsEmpty] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
@@ -31,10 +30,8 @@ const MessageInput = ({ onSendMessage, disabled, chatName = 'general' }) => {
     link: false,
   });
 
-  // Track editor reference and empty state
   const editorRef = useRef(null);
 
-  // Update empty state
   const checkIfEmpty = () => {
     if (editorRef.current) {
       const text = editorRef.current.innerText.trim();
@@ -42,32 +39,26 @@ const MessageInput = ({ onSendMessage, disabled, chatName = 'general' }) => {
     }
   };
 
-  // Handle paste events to remove formatting
   const handlePaste = (e) => {
     e.preventDefault();
     const text = e.clipboardData.getData('text/plain');
     document.execCommand('insertText', false, text);
   };
 
-  // Send message handler
   const handleSubmit = (e) => {
     e.preventDefault();
     
     if (selectedFile) {
-      // Get text content from editor as caption
       const caption = editorRef.current ? editorRef.current.innerHTML : '';
       
-      // Pass both the caption and the file to the message handler
       onSendMessage(caption, selectedFile);
       
-      // Reset editor and file selection
       if (editorRef.current) {
         editorRef.current.innerHTML = '';
       }
       setIsEmpty(true);
       clearSelectedFile();
       
-      // Reset format options
       setFormatOptions({
         bold: false,
         italic: false,
@@ -75,17 +66,13 @@ const MessageInput = ({ onSendMessage, disabled, chatName = 'general' }) => {
         link: false
       });
     } else if (editorRef.current && !isEmpty) {
-      // Get HTML content
       const content = editorRef.current.innerHTML;
       
-      // Send the message
       onSendMessage(content);
       
-      // Reset editor
       editorRef.current.innerHTML = '';
       setIsEmpty(true);
       
-      // Reset format options
       setFormatOptions({
         bold: false,
         italic: false,
@@ -132,11 +119,10 @@ const MessageInput = ({ onSendMessage, disabled, chatName = 'general' }) => {
       const range = selection.getRangeAt(0);
       const span = document.createElement('span');
       span.id = 'format-marker';
-      span.textContent = '\u200B'; // Zero-width space
+      span.textContent = '\u200B';
       
       range.insertNode(span);
       
-      // Move cursor after marker
       range.setStartAfter(span);
       range.setEndAfter(span);
       selection.removeAllRanges();
@@ -381,30 +367,26 @@ const MessageInput = ({ onSendMessage, disabled, chatName = 'general' }) => {
           const openInNewWindow = document.getElementById('open-new-window')?.checked;
           
           if (currentSelection) {
-            // Restore the selection
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(currentSelection.range);
             
             if (openInNewWindow) {
-              // Insert link with target="_blank" attribute
               const range = currentSelection.range.cloneRange();
               const linkElement = document.createElement('a');
               linkElement.href = url;
               linkElement.target = '_blank';
-              linkElement.rel = 'noopener noreferrer'; // Security best practice
+              linkElement.rel = 'noopener noreferrer';
               linkElement.textContent = currentSelection.text;
               range.deleteContents();
               range.insertNode(linkElement);
               setFormatOptions({ ...formatOptions, link: true });
             } else {
-              // Use standard createLink command
               applyFormatToSelection('createLink', url, true);
             }
           }
           
           setIsLinkModalOpen(false);
-          // Focus back on the input after adding link
           setTimeout(() => {
             editorRef.current.focus();
           }, 0);
